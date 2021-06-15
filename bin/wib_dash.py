@@ -269,7 +269,7 @@ app.layout = html.Div([
                 options=_make_options(['buf0 + buf1', 'buf0', 'buf1']),
                 value='buf0 + buf1',
             ),
-            dbc.Input(id='last_update', value=-1, disabled=True),
+            dbc.Input(id='status', value=-1, disabled=True),
             dbc.Button('Acquire', id='acquire', color='secondary'),
         ]
     ),
@@ -317,12 +317,9 @@ cache = Cache(
     }
 )
 
-
-# In[7]:
-
-
 @app.callback(
     Output('timestamp', 'data'),
+    Output('status', 'value'),
     Input('acquire', 'n_clicks_timestamp'),
     State('wib_type', 'value'),
     State('wib_src', 'value'),
@@ -346,22 +343,15 @@ def _on_acquire(timestamp, wib_type, wib_src, buf, last_update):
     else:
         raise PreventUpdate
         
+    try:
+        ts, data = wib.acquire_data(**kwargs)
+    except:
+        return last_update, 'ERROR: spy buffer'
+
     cache.clear()
-    ts, data = wib.acquire_data(**kwargs)
     cache.set('data', data)
     cache.set('ts', ts)
-    return timestamp
-
-
-# In[8]:
-
-
-@app.callback(
-    Output('last_update', 'value'),
-    Input('timestamp', 'data'),
-)
-def _set_timestamp(timestamp):
-    return timestamp
+    return timestamp, timestamp
 
 @app.callback(
     Output('pixel', 'figure'),
