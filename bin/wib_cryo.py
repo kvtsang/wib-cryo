@@ -333,7 +333,7 @@ def enable_clk(addr, port, femb):
         i += 1
 
     if not success:
-        print(f'[{addr}:{host}] Failed to lock rxLink', file=sys.stderr)
+        print(f'[{addr}:{port}] Failed to lock rxLink', file=sys.stderr)
         sys.exit(1)
 
 def config_asic(addr, port, asic, val):
@@ -384,6 +384,7 @@ def disable_ramp(addr, port, femb):
 
 def init(addr, port, femb, cold):
     config_pll(addr, port)
+    reset_asic(addr, port, femb)
     load_default_yml(addr, port, femb, cold)
     enable_clk(addr, port, femb)
     toggle_sr0(addr, port)
