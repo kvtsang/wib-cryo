@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+
+PROG=cryo_yml
+
+usage()
+{
+  cat <<_-EOF
+===============================================
+=   cryo_yml: wib-cryo yml file generation    =
+=                                             =
+=               Patrick Tsang                 =
+=        kvtsang@slac.stanford.edu            =
+===============================================
+
+Usage: $PROG <template.yml> <prefix>
+
+<template.yml>
+  yml file is written for CryoASIC0.
+
+<prefix>
+  generate output files <prefix>_asic{0..7}.yml
+
+Example: 
+  $PROG templates/room.yml wib_cryo_config_ASIC_ExtClk_RoomTemp
+
+_-EOF
+}
+
+[ $# -ne 2 ] && usage && exit 1
+
+TEMPLATE="$1"
+PREFIX="$2"
+
+[ ! -f "$TEMPLATE" ] && echo "$TEMPLATE not found" && exit 1
+
+OUTFILE="${PREFIX}_asic0.yml"
+echo "Copying $TEMPLATE to $OUTFILE"
+cp "$TEMPLATE" "$OUTFILE"
+
+for asic in $(seq 1 7); do
+  OUTFILE="${PREFIX}_asic${asic}.yml"
+  echo "Generating $OUTFILE"
+
+  femb=$((asic/2))
+  sed \
+    -e "s/CryoAsic0/CryoAsic${asic}/g" \
+    -e "s/GlblRstPolarity0/GlblRstPolarity${femb}/g" \
+    -e "s/SspGtDecoderReg0/SspGtDecoderReg${femb}/g" \
+    "$TEMPLATE" > "$OUTFILE"
+done
