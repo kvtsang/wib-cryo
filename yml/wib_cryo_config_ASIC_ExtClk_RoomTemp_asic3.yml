@@ -70,9 +70,9 @@ cryoAsicGen1:
       DM2sel: 0x0
       SubBnkEn: 0xFFFF
       LDO_VTBias_B0: 0x3
-      LDO_VTBias_T0: 0x9
+      LDO_VTBias_T0: 0xb
       LDO_VTBias_Br0: 0x2
-      LDO_VTBias_Tr0: 0x2
+      LDO_VTBias_Tr0: 0x0
       TPS_DAC_Gain: 0x3
       LDO0TB_En: True
       LDO0rTB_En: True
