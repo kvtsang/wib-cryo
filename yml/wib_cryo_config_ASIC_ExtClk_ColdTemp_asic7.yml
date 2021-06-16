@@ -70,7 +70,7 @@ cryoAsicGen1:
       DM2sel: 0x0
       SubBnkEn: 0xffff
       LDO_VTBias_B0: 0x3
-      LDO_VTBias_T0: 0x4
+      LDO_VTBias_T0: 0x5
       LDO_VTBias_Br0: 0x2
       LDO_VTBias_Tr0: 0x3
       TPS_DAC_Gain: 0x7
@@ -83,7 +83,7 @@ cryoAsicGen1:
       En_BankClk_Bk0_LVDS: False
       En_BankClk_Bk1_LVDS: False
       En_SerClk_out_Bk0_LVDS: False
-      En_SerClk_out_Bk1_LVDS: Fales
+      En_SerClk_out_Bk1_LVDS: False
       rtrimLVDS_b0: 0x2
       SACItristateLVDS_bit: False
       VrefGen_B0_1v2: 0x3
