@@ -384,7 +384,6 @@ def disable_ramp(addr, port, femb):
 
 def init(addr, port, femb, cold):
     config_pll(addr, port)
-    reset_asic(addr, port, femb)
     load_default_yml(addr, port, femb, cold)
     enable_clk(addr, port, femb)
     toggle_sr0(addr, port)
