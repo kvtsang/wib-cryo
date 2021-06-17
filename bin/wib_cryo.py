@@ -328,6 +328,9 @@ def enable_clk(addr, port, femb):
             clk(addr, port, False)
 
         clk(addr, port, True)
+        sr0(addr, port, True)
+        time.sleep(5)
+        sr0(addr, port, False)
 
         success = is_rx_locked(addr, port, fembs, timeout=TIMEOUT)
         i += 1
