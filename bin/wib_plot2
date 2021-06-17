@@ -1,0 +1,63 @@
+#!/usr/bin/env sh
+usage() {
+  cat <<_-EOF
+Usage: $PROG
+_-EOF
+}
+
+PROG="wib_plot2"
+CMD="/home/kvtsang/wib-cryo/bin/wib_plot.py"
+
+[ $# -ne 2 ] && usage && exit 1
+
+INDIR="$(realpath $1)"
+NAME="$2"
+
+OPTS="-d $NAME"
+COND="Room"
+case "$(echo \"$INDIR\" | tr '[:upper:]' '[:lower:]')" in
+  *cold*):
+    echo "Cold condition detected"
+    OPTS="$OPTS --cold"
+    COND="Cold"
+    ;;
+  *room*):
+    echo "Room condition detected"
+    ;;
+  *)
+    echo "Unknown condition, assuming room"
+    ;;
+esac
+
+OUTDIR="$(date '+%Y-%m-%d')_${NAME}_${COND}"
+[ ! -d $INDIR ] && echo "$INDIR not exisit" && exit 1
+[ -d $OUTDIR ] && echo "$OUTDIR already exisit. Aborting ..." && exit 1
+
+OLDDIR="$PWD"
+mkdir "$OUTDIR" && cd "$OUTDIR" || exit 1
+
+for dataset in $(ls -d "$INDIR"/*)
+do
+  [ ! -d $dataset ] && continue
+  echo "Processing $dataset"
+
+  case "$(basename $dataset)" in
+    *0x39[048c]*):
+      $CMD psd -i "$dataset" $OPTS
+      $CMD mcorr -i "$dataset" $OPTS
+      $CMD std -i "$dataset" $OPTS
+      ;;
+    *0x39[159d]*):
+      $CMD pulse -i "$dataset" $OPTS
+      ;;
+    *):
+      echo "Unknwon ASIC setting (skip processing)"
+      continue
+      ;;
+  esac
+done
+
+echo "DONE"
+echo 
+
+cd "$OLDDIR"
