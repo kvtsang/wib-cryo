@@ -56,16 +56,24 @@ The following example show how to configure FEMB1 in room temperature.
 After wib booted,
 ```
 source ~wib/setup.sh
+
+# Optinal for SLAC (since there is no timing module)
 wib_client.py -w 192.168.121.1 timing_reset
+
+# Power on FEMBs
 power_cycle_fembs
-wib_cryo.py init -femb 1
+
+# Init for room setting
+wib_cryo.py init --femb 1
+
+# Init for cold setting
+wib_cryo.py init --femb 1 --cold
 ```
 
-The above script do the following in sequence:
-1. configure DC2DC/LDO volatages and power on ALL FEMBs
-2. enable and set `MMCM7Registers`
-3. load yaml config file to ASIC (currently only for ASIC{2,3} of FEMB1)
-4. enable clock 'SampClkEn' and check for a stable `Locked`
+The `wib_cryo.py init` do the following in sequence:
+1. config PLL: enable and set `MMCM7Registers`
+2. load yaml config file to ASIC 
+3. enable clock 'SampClkEn' and check for a stable `Locked`
 
 To check timing status, do
 ```
@@ -76,7 +84,7 @@ If the pyrogue gui does not respond (especially after power cycle),
 try issue a reboot `wib_client.py -w 192.168.121.1 reboot`.
 
 If it failed to get locked after a number of retries, 
-try `power_cycle_fembs` (optional) and `wib_cryo.py reset_asics`. 
+try `power_cycle_fembs` (optional) and `wib_cryo.py reset_asic --femb 1`.
 Then repeat `wib_cryo.py init --femb 1`.
 
 Once the wib is initialized, configure ASICs for data mode
@@ -126,6 +134,65 @@ wib_daq.py -w 192.168.121.1 -n 10 -o some_output_folder --buf 0
 - for help, `wib_daq.py -h`
 - if there is any problem, test whether spy buffer works (see above)
 
-Python server
-=============
+Start rogue gui on host
+=======================
 python -m pyrogue --server=192.168.121.1:9099 gui &
+
+How to update yml files
+=======================
+
+The yml files are tracked on github for bookkeeping:
+[wib-cryo/yml](https://github.com/kvtsang/wib-cryo/tree/main/yml)
+
+In case you want to change setting, you may do it either
+1. edit directly on the  wib, or
+2. download a copy from the wib, edit and upload back to the wib.
+
+Edit yml on WIB
+---------------
+```
+ssh root@192.168.121.1
+cd /etc/cryo/yml
+```
+
+edit templates/room.yml or templates/cold.yml
+then generate yml files for all ASICs
+
+```
+cd /etc/cryo/yml
+cryo_yml templates/room.yml wib_cryo_config_ASIC_ExtClk_RoomTemp
+cryo_yml templates/cold.yml wib_cryo_config_ASIC_ExtClk_ColdTemp
+
+sync;sync;sync
+```
+
+Edit yml on host
+----------------
+```
+mkdir tmp_yml
+rsync -avchP root@192.168.121.1:/etc/cryo/yml/ tmp_yml/
+```
+
+edit templates/room.yml or templates/cold.yml
+then generate yml files for all ASICs
+
+```
+cd tmp_yml
+cryo_yml templates/room.yml wib_cryo_config_ASIC_ExtClk_RoomTemp
+cryo_yml templates/cold.yml wib_cryo_config_ASIC_ExtClk_ColdTemp
+```
+
+upload to the wib
+```
+cd ../
+rsync -avchP tmp_yml/ root@192.168.121.1:/etc/cryo/yml/
+```
+
+Some Tips
+---------
+- `templates/room.yml` is the room temperature setting for ASIC0 
+- similarly `templates/cold.yml` for cold setting
+- for the `rsync` command
+  remember to put `/` at the end of the source and target folder
+- to check what you have edited, do `diff templates/room.yml wib_cryo_config_ASIC_ExtClk_RoomTemp_asic0.yml` before running `cryo-yml`
+- notify on the slack channel when there is a new stable version
