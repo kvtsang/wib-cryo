@@ -96,7 +96,7 @@ cryoAsicGen1:
       FE_Amp_B0_1v2: 0x2
       bifb: 0x3
       bbaseref: 0x3
-      blcoarse: 0x3
+      blcoarse: 0x6
       ctrl_pulser: False
       Pulser_Bias_DAC_b0: 0x4
       PP_Pulser_Bias_DAC: True
