@@ -9,7 +9,23 @@ import itertools
 import numpy as np
 from multiprocessing import Process
 
-from pyrogue.interfaces import SimpleClient
+from pyrogue.interfaces import SimpleClient as pr_SimpleClient
+
+# TODO(2021-06-17 kvtsang) Remove after upgrading to rogue-v5.7.0
+class _SimpleClient(pr_SimpleClient):
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    self._stop()
+
+  def exec(self, path, arg=None):
+    return self._remoteAttr(path, '__call__', arg)
+
+if hasattr(pr_SimpleClient, '__enter__'):
+  SimpleClient = pr_SimpleClient
+else:
+  SimpleClient = _SimpleClient
 
 def version(**kwargs):
     print( '''
