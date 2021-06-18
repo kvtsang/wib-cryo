@@ -85,13 +85,10 @@ def get_addr_port(wib_addr=None):
     # overrided by addr input
     wib_port = os.getenv('WIB_ROGUE_PORT', '9099')
 
-    # get wib ip address from $WIB_ADDR if not specify
+    # get wib ip address from $WIB_ADDR if not set
+    # default: localhost
     if wib_addr is None:
-        wib_addr = os.getenv('WIB_ADDR')
-
-        if wib_addr  is None:
-            print('WIB address not set', file=sys.stderr)
-            sys.exit(1)
+        wib_addr = os.getenv('WIB_ADDR') or 'localhost'
     elif ':' in wib_addr:
         wib_addr, wib_port = wib_addr.split(':')
         wib_port = int(wib_port)
