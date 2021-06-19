@@ -44,6 +44,10 @@ Only turn on FEMB2 only
 
 - if a FEMB is ON, no action will be taken
 
+Start rogue gui on host
+-----------------------
+python -m pyrogue --server=192.168.121.1:9099 gui &
+
 WIB Initialization
 ==================
 **Notes(2021-06-11)**
@@ -121,6 +125,10 @@ Dash is running on http://127.0.0.1:8050/
 ```
 Open the url in a brower (on pc98921).
 
+Start rogue gui on host
+=======================
+python -m pyrogue --server=192.168.121.1:9099 gui &
+
 Record Data from Spy Buffer
 ===========================
 ```
@@ -134,9 +142,28 @@ wib_daq.py -w 192.168.121.1 -n 10 -o some_output_folder --buf 0
 - for help, `wib_daq.py -h`
 - if there is any problem, test whether spy buffer works (see above)
 
-Start rogue gui on host
-=======================
-python -m pyrogue --server=192.168.121.1:9099 gui &
+Spy Buffer Data Plots
+=====================
+
+Assume series of runs (dataset) are recorded in "/home/wib/data/SN03/Cold/T2".
+The following command output psd and pulse plots to `{YYYY-MM-DD}_WIB_FEMB_SN03_T2_Cold`.
+```
+wib_plot2 /home/wib/data/SN03/Cold/T2
+```
+
+**Notes**
+- the folder and file naming are crucial
+- make sure to following the folder structure 
+  `something/SN{01,02,03}/{Room,Cold}/T{1,2,3,4,..}`
+- ASIC setting (e.g. `0x390`) should be part of data folder name
+  refer to `wib_daq.py -o <output>`
+
+A good example should look like this
+```
+$ ls /home/wib/data/SN03/Cold/T2 
+
+WIB_0x390  WIB_0x391  WIB_0x394  WIB_0x395  WIB_0x398  WIB_0x399  WIB_0x39c  WIB_0x39d
+```
 
 How to update yml files
 =======================
