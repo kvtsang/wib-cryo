@@ -1,0 +1,74 @@
+#!/usr/bin/env sh
+die() {
+  echo "$@" >&2
+  exit 1
+}
+
+backup_log() {
+  [ -f "$1" ] && cp "$1" "${1}.0"
+}
+
+start_server() {
+  pidof -x $name >/dev/null && die "$name already running"
+  backup_log /var/log/${name}.log
+  backup_log /var/log/${name}.err
+  sync
+  echo "starting ${name}"
+  
+  case "$1" in
+    wib_server)
+      CMD="/usr/bin/wib_server CRYO"
+      ;;
+    rogue_server) 
+      CMD="/etc/cryo/python/script/rogue_server --type=wib-hw"
+      ;;
+    *) return ;;
+  esac
+  $CMD </dev/null 2>/var/log/${name}.err 1>/var/log/${name}.log &
+
+  [ $? -eq 0 ] || die "fail to start $name"
+  sleep 1
+  echo "$name started, pid=$(pidof -x $name)"
+}
+
+kill_server() {
+  PID=$(pidof -x "$1")
+  [ -z $PID ] && return
+
+  echo "killing $1, pid=${PID}" 
+  kill -9 $PID || die "fail to kill $1"
+}
+
+
+cmd_server() {
+  name="$1"
+  action="$2"
+  case "$action" in
+    start) start_server $name ;;
+    stop) kill_server $name ;;
+    restart) kill_server $name ; sleep 1; start_server $name ;;
+    status)
+      PID=$(pidof -x $name)
+      [ $? -eq 0 ] && echo "$name running, pid=${PID}" \
+	      || echo "$name not running"
+      ;;
+    *)
+      die "unkown sub-command $1"
+      ;;
+  esac
+}
+
+cmd_usage() {
+  echo "wib_service"
+}
+
+case "$1" in 
+  wib)    shift; cmd_server wib_server "$@" ;;
+  rogue)  shift; cmd_server rogue_server "$@" ;;
+  status|start|restart|stop)
+	  cmd_server wib_server "$@"
+	  cmd_server rogue_server "$@"
+	  ;;
+  *)	  cmd_usage ;;
+esac
+exit 0
