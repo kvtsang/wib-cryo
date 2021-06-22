@@ -453,9 +453,9 @@ def main():
     _bind(subparsers, toggle_sr0)
     _bind(subparsers, config_asic, aliases=['config'])
     _bind(subparsers, config_asic_ch, aliases=['config_ch'])
+    _bind(subparsers, reset_asic, aliases=['reset'])
     _bind(subparsers, enable_clk)
     _bind(subparsers, enable_ramp)
-    _bind(subparsers, reset_asic)
     _bind(subparsers, disable_ramp)
     _bind(subparsers, init)
     _bind(subparsers, version)
@@ -463,6 +463,8 @@ def main():
 
     args = parser.parse_args()
     addr, port = get_addr_port(args.wib)
+    if args.func is None:
+        args.func = usage
 
     kwargs = vars(args).copy()
     kwargs.pop('wib')
