@@ -16,7 +16,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.0.1              =
+=           v0.0.2              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
@@ -34,17 +34,17 @@ Usage:
         Use room temperature setting by default.
         Example: {PROG} init --femb 0 1 2 3 --cold
 
-    {PROG} reset_asic --femb FEMBS 
+    {PROG} reset_asic/reset --femb FEMBS 
         Reset asic by toggling GlblRstPolarity
         Disable SampClkEn and SR0Polarity after reset
         Example: {PROG} reset_asic --femb 0 1 2 3
 
-    {PROG} config_asic --asic ASICS --val VALUE
-        WriteColData for all channels in the given ASICS
-        Example: {PROG} config_asic --asic 2 3 --val 0x390
+    {PROG} config_asic/config --femb FEMBS --asic ASICS --val VALUE
+        WriteColData for all channels in the given FEMBS/ASICS
+        Example: {PROG} config_asic --femb 0 --asic 2 --val 0x390
 
-    {PROG} config_asic_ch --asic ASICS --ch CHANNELS --val VALUE
-        WritePixelData for the given ASICS and CHANNELS
+    {PROG} config_asic_ch/config_ch --femb FEMB --asic ASICS --ch CHANNELS --val VALUE
+        WritePixelData for the given FEMBS/ASICS and CHANNELS
         Example: {PROG} config_asic_ch --asic 0 1 --ch 32 50 101 --val 0x390
 
     {PROG} enable_ramp --femb FEMBS
@@ -336,14 +336,14 @@ def enable_clk(addr, port, femb):
         print(f'[{addr}:{port}] Failed to lock rxLink', file=sys.stderr)
         sys.exit(1)
 
-def config_asic(addr, port, asic, val):
-    asics = [asic] if isinstance(asic, int) else asic
+def config_asic(addr, port, femb, asic, val):
+    asics = _get_asic_from(femb, asic)
     cmd = [(f'cryoAsicGen1.WibFembCryo.CryoAsic{i}.WriteColData', val)
             for i in asics]
     rogue_exec(addr, port, cmd)
     
-def config_asic_ch(addr, port, asic, ch, val):
-    asics = [asic] if isinstance(asic, int) else asic
+def config_asic_ch(addr, port, femb, asic, ch, val):
+    asics = _get_asic_from(femb, asic)
     chs = [ch] if isinstance(ch, int) else ch 
 
     cmds = []
@@ -410,9 +410,9 @@ def _bind(parser, func, **kwargs):
         if arg == 'addr' or arg == 'port':
             continue
         elif arg == 'femb':
-            p.add_argument('--femb',
+            p.add_argument('--femb', default=[],
                     choices=range(4), type=int, nargs='+',
-                    required=True, help='FEMB number(s)')
+                    help='FEMB number(s)')
         elif arg == 'cold':
             p.add_argument('--cold',
                     action='store_true',
@@ -420,8 +420,8 @@ def _bind(parser, func, **kwargs):
         elif arg == 'flag':
             p.add_argument('flag', type=int, choices=[0,1], help='0 or 1')
         elif arg == 'asic':
-            p.add_argument('--asic', type=int, choices=range(8), 
-                    nargs='+', required=True,
+            p.add_argument('--asic', default=[],
+                    choices=range(8), type=int, nargs='+',
                     help='ASIC number(s)')
         elif arg == 'ch':
             p.add_argument('--ch', type=int, choices=range(128),
@@ -439,6 +439,40 @@ def _bind(parser, func, **kwargs):
 
     p.set_defaults(func=func)
             
+def _get_asic_from(femb=[], asic=[]):
+    """
+    Lazy function to generate list of asic numbers.
+    Allows list or integer input.
+
+    Parameters
+    ----------
+    femb: int or list of int
+      FEMB number(s)
+    asic : int or list of int
+      ASIC number(s)
+
+    Returns
+    -------
+    output: list of int
+      Corresponding ASIC number(s)
+    """
+
+    femb = [femb] if isinstance(femb, int) else femb
+    asic = [asic] if isinstance(asic, int) else asic
+
+    tmp = set(asic)
+    for i in femb:
+      if isinstance(i, int) and (0 <= i <= 3):
+        tmp.add(2*i)
+        tmp.add(2*i+1)
+
+    output = []
+    for i in tmp:
+      if isinstance(i, int) and (0 <= i <= 7):
+        output.append(i)
+
+    return output
+
 def main():
     parser = argparse.ArgumentParser(description='WIB Cryo')
     parser.add_argument('-w', dest='wib', metavar='ip:<port>',
