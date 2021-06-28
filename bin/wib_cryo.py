@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+
+'''
+History
+=======
+
+DATE       WHO WHAT
+---------- --- ---------------------------------------------------------
+2021-07-28 kvt Added enable/disable trigger (v0.0.3)
+'''
+
 import os
 import sys
 import subprocess
@@ -383,6 +393,19 @@ def enable_ramp(addr, port, femb):
 def disable_ramp(addr, port, femb):
     set_ramp(addr, port, femb, False)
 
+def set_trigger(addr, port, flag):
+    path = 'cryoAsicGen1.WibFembCryo.TriggerRegisters'
+    pars = [ (f'{path}.enable', flag), 
+             (f'{path}.RunTriggerEnable', flag),
+           ]
+    rogue_set(addr, port, pars)
+
+def enable_trigger(addr, port):
+    set_trigger(addr, port, True)
+
+def disable_trigger(addr, port):
+    set_trigger(addr, port, False)
+
 def init(addr, port, femb, cold):
     config_pll(addr, port)
     load_default_yml(addr, port, femb, cold)
@@ -498,6 +521,8 @@ def main():
     _bind(subparsers, enable_clk)
     _bind(subparsers, enable_ramp)
     _bind(subparsers, disable_ramp)
+    _bind(subparsers, enable_trigger)
+    _bind(subparsers, disable_trigger)
     _bind(subparsers, init)
     _bind(subparsers, count_reset)
     _bind(subparsers, version)
