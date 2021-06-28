@@ -16,7 +16,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.0.2              =
+=           v0.0.3              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
@@ -328,6 +328,7 @@ def enable_clk(addr, port, femb):
         sr0(addr, port, True)
         time.sleep(5)
         sr0(addr, port, False)
+        count_reset(addr, port)
 
         success = is_rx_locked(addr, port, fembs, timeout=TIMEOUT)
         i += 1
@@ -385,9 +386,15 @@ def disable_ramp(addr, port, femb):
 def init(addr, port, femb, cold):
     config_pll(addr, port)
     load_default_yml(addr, port, femb, cold)
+    print("Wait for 30s ...")
+    time.sleep(30)
     enable_clk(addr, port, femb)
     toggle_sr0(addr, port)
     print(f'[{addr}:{port}] WIB-CRYO initialzed, is_cold={cold}')
+
+def count_reset(addr, port):
+    cmd = ('root.CountReset', None)
+    rogue_exec(addr, port, [cmd])
 
 def _bind(parser, func, **kwargs):
     """
@@ -492,6 +499,7 @@ def main():
     _bind(subparsers, enable_ramp)
     _bind(subparsers, disable_ramp)
     _bind(subparsers, init)
+    _bind(subparsers, count_reset)
     _bind(subparsers, version)
     _bind(subparsers, usage, aliases=['help'])
 
