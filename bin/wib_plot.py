@@ -6,6 +6,7 @@ import argparse
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy import signal
 from glob import glob
 
@@ -217,8 +218,15 @@ def plot_pulse(adcs, num=None):
     return plot_wfm(adcs, num)
 
 def save_stats(adcs, output):
-    table = adcs.std(axis=-1).mean(axis=0)
-    np.savetxt(f'{output}.txt', table, fmt='%.3f')
+    table = {
+        'mean' : adcs.mean(axis=(0,2)),
+        'std' : adcs.std(axis=-1).mean(axis=0),
+    }
+    df = pd.DataFrame(table)
+    df.to_csv(
+        f'{output}.txt', index_label='ch', 
+        float_format='%.3f',
+    )
 
 def plot_std(adcs, num=None):
     table = adcs.std(axis=-1).mean(axis=0)
@@ -243,7 +251,7 @@ def plot(adcs, femb, title, output, plot_func, **kwargs):
             fig.savefig(f'{out_prefix}.png')
 
             if plot_func.__name__ == 'plot_std':
-                save_stats(data, out_prefix)
+                save_stats(data, out_prefix.replace('std_', 'stats_'))
 
 def _bind(parser, func, **kwargs):
     name = func.__name__
