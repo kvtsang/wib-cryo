@@ -224,7 +224,7 @@ def save_stats(adcs, output):
     }
     df = pd.DataFrame(table)
     df.to_csv(
-        f'{output}.txt', index_label='ch', 
+        f'{output}.csv', index_label='ch',
         float_format='%.3f',
     )
 
