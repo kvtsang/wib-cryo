@@ -6,7 +6,8 @@ History
 
 DATE       WHO WHAT
 ---------- --- ---------------------------------------------------------
-2021-07-28 kvt Added enable/disable trigger (v0.0.3)
+2021-07-02 kvt Set GlblRstPolarity=0x0 for reset_asic (v0.0.4)
+2021-06-28 kvt Added enable/disable trigger (v0.0.3)
 '''
 
 import os
@@ -26,7 +27,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.0.3              =
+=           v0.0.4              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
@@ -288,11 +289,10 @@ def is_rx_locked(addr, port, femb, timeout, min_locked_cnt=10):
 def reset_asic(addr, port, femb):
     fembs = [femb] if isinstance(femb, int) else femb
 
-    pars = []
+    pars = [('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.enable', True)]
     for i in fembs:
         var = f'cryoAsicGen1.WibFembCryo.AppFpgaRegisters.GlblRstPolarity{i}'
         pars.append((var, False))
-        pars.append((var, True))
 
     rogue_set(addr, port, pars, pause=1)
 
@@ -398,6 +398,7 @@ def set_trigger(addr, port, flag):
     pars = [ (f'{path}.enable', flag), 
              (f'{path}.RunTriggerEnable', flag),
            ]
+    if not flag: pars.reverse()
     rogue_set(addr, port, pars)
 
 def enable_trigger(addr, port):
