@@ -6,6 +6,7 @@ History
 
 DATE       WHO WHAT
 ---------- --- ---------------------------------------------------------
+2021-07-05 kvt Fix config_asic_ch (v0.0.5)
 2021-07-02 kvt Set GlblRstPolarity=0x0 for reset_asic (v0.0.4)
 2021-06-28 kvt Added enable/disable trigger (v0.0.3)
 '''
@@ -27,7 +28,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.0.4              =
+=           v0.0.5              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
@@ -54,9 +55,10 @@ Usage:
         WriteColData for all channels in the given FEMBS/ASICS
         Example: {PROG} config_asic --femb 0 --asic 2 --val 0x390
 
-    {PROG} config_asic_ch/config_ch --femb FEMB --asic ASICS --ch CHANNELS --val VALUE
-        WritePixelData for the given FEMBS/ASICS and CHANNELS
-        Example: {PROG} config_asic_ch --asic 0 1 --ch 32 50 101 --val 0x390
+    {PROG} config_asic_ch/config_ch --femb FEMB --ch CHANNELS --val VALUE
+        WritePixelData for the given CHANNELS (0-127) in a FEMB
+        Ch 0-63 <-> 1st ASIC, ch 64-127 <-> 2nd ASIC
+        Example: {PROG} config_asic_ch --femb 1 --ch 32 50 101 --val 0x390
 
     {PROG} enable_ramp --femb FEMBS
         Set internal ramp mode for FEMBS.
@@ -353,13 +355,14 @@ def config_asic(addr, port, femb, asic, val):
             for i in asics]
     rogue_exec(addr, port, cmd)
     
-def config_asic_ch(addr, port, femb, asic, ch, val):
-    asics = _get_asic_from(femb, asic)
+def config_asic_ch(addr, port, femb, ch, val):
     chs = [ch] if isinstance(ch, int) else ch 
+    fembs = [femb] if isinstance(femb, int) else femb
 
     cmds = []
-    for a, c in itertools.product(asics, chs):
-        cmds.append((f'cryoAsicGen1.WibFembCryo.CryoAsic{asic}.RowCounter', ch))
+    for f, c in itertools.product(fembs, chs):
+        asic = 2 * f + c // 64
+        cmds.append((f'cryoAsicGen1.WibFembCryo.CryoAsic{asic}.RowCounter', c % 64))
         cmds.append((f'cryoAsicGen1.WibFembCryo.CryoAsic{asic}.WritePixelData', val))
     rogue_exec(addr, port, cmds)
 
@@ -544,4 +547,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
