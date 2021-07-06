@@ -6,6 +6,7 @@ History
 
 DATE       WHO WHAT
 ---------- --- ---------------------------------------------------------
+2021-07-06 kvt reset_asic during init (v0.1.1)
 2021-07-05 kvt Added disable_lane (v0.1.0)
 2021-07-05 kvt Fix config_asic_ch (v0.0.5)
 2021-07-02 kvt Set GlblRstPolarity=0x0 for reset_asic (v0.0.4)
@@ -417,6 +418,8 @@ def disable_trigger(addr, port):
 
 def init(addr, port, femb, cold):
     config_pll(addr, port)
+    reset_asic(addr, port, femb)
+    time.sleep(3)
     load_default_yml(addr, port, femb, cold)
     print("Wait for 30s ...")
     time.sleep(30)
