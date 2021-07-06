@@ -122,6 +122,7 @@ wib_rx_mask.py 0xff1f
 
 **Notes**
 - `toogle_sr0` is required only if any one of the lanes is not locked
+  - the locked status might change after `toggle_sr0`
 - `disable_lane` zeroes out all channels on the disabled lane using `WritePixelData`
   - the active channels are configured with `--val`
   - DO NOT execute `config_asic` or `WriteColData` after `disable_lane`
