@@ -6,6 +6,7 @@ History
 
 DATE       WHO WHAT
 ---------- --- ---------------------------------------------------------
+2021-07-05 kvt Added disable_lane (v0.1.0)
 2021-07-05 kvt Fix config_asic_ch (v0.0.5)
 2021-07-02 kvt Set GlblRstPolarity=0x0 for reset_asic (v0.0.4)
 2021-06-28 kvt Added enable/disable trigger (v0.0.3)
@@ -59,6 +60,10 @@ Usage:
         WritePixelData for the given CHANNELS (0-127) in a FEMB
         Ch 0-63 <-> 1st ASIC, ch 64-127 <-> 2nd ASIC
         Example: {PROG} config_asic_ch --femb 1 --ch 32 50 101 --val 0x390
+
+    {PROG} disable_lane --femb FEMB --lane LANES --val VALUE
+        Disalbe lanes in a FEMB and config the enabled channels with VALUE.
+        Example: {PROG} disable_lane --femb --lane 1 2 --val 0x390
 
     {PROG} enable_ramp --femb FEMBS
         Set internal ramp mode for FEMBS.
@@ -423,6 +428,26 @@ def count_reset(addr, port):
     cmd = ('root.CountReset', None)
     rogue_exec(addr, port, [cmd])
 
+def disable_lane(addr, port, femb, lane, val):
+    if isinstance(femb, list):
+        if len(femb) == 1:
+            femb = femb[0]
+        else:
+            print('disable_lane does not support mulltiple inputs for --femb')
+            sys.exit(1)
+
+    config_asic(addr, port, femb=femb, asic=[], val=val)
+
+    lanes = [lane] if isinstance(lane, int) else lane
+    rx_mask = ~(0xf << (femb*4)) & 0xffff
+    for l in lanes:
+        chs = list(range(l*32, (l+1)*32))
+        config_asic_ch(addr, port, femb, chs, val+0x2)
+        rx_mask |= (1 << (femb*4 + l))
+    
+    print(f'rx_mask: {hex(rx_mask)} for FEMB{femb}')
+    print('you may need to modify rx_mask to include other FEMB(s)')
+
 def _bind(parser, func, **kwargs):
     """
     Bind parser to a function.
@@ -462,6 +487,12 @@ def _bind(parser, func, **kwargs):
                     metavar='CH{0-127}', nargs='+', required=True,
                     help='Channel number(s)',
                     )
+        elif arg == 'lane':
+            p.add_argument(
+                '--lane', type=int, choices=range(4),
+                metavar='{0,1,2,3}', nargs='+', required=True,
+                help='Lane number(s)',
+            )
         elif arg == 'val':
             p.add_argument('--val', type=lambda x: int(x,0),
                     required=True, help='value to set')
@@ -472,6 +503,7 @@ def _bind(parser, func, **kwargs):
             print(f'Bind: unkwonn argument {arg}')
 
     p.set_defaults(func=func)
+
             
 def _get_asic_from(femb=[], asic=[]):
     """
@@ -529,6 +561,7 @@ def main():
     _bind(subparsers, disable_trigger)
     _bind(subparsers, init)
     _bind(subparsers, count_reset)
+    _bind(subparsers, disable_lane)
     _bind(subparsers, version)
     _bind(subparsers, usage, aliases=['help'])
 
