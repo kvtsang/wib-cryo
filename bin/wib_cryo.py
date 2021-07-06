@@ -419,7 +419,8 @@ def disable_trigger(addr, port):
 def init(addr, port, femb, cold):
     config_pll(addr, port)
     reset_asic(addr, port, femb)
-    time.sleep(3)
+    print('Wait for 30s ...')
+    time.sleep(30)
     load_default_yml(addr, port, femb, cold)
     print("Wait for 30s ...")
     time.sleep(30)
