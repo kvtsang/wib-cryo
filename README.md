@@ -110,6 +110,28 @@ Finally set the rx mask
 wib_rx_mask.py --femb 1
 ```
 
+Disable Lane (Experimental)
+===========================
+
+This example shows how to disable an unlocked lane #0 from FEMB #1.
+```
+wib_cryo.py toggle_sr0
+wib_cryo.py disable_lane --femb 1 --lane 0 --val 0x390
+wib_rx_mask.py 0xff1f
+```
+
+**Notes**
+- `toogle_sr0` is required only if any one of the lanes is not locked
+- `disable_lane` zeroes out all channels on the disabled lane using `WritePixelData`
+  - the active channels are configured with `--val`
+  - DO NOT execute `config_asic` or `WriteColData` after `disable_lane`
+- `rx_mask` is a 16-bit number (4 FEMBs x 4 lanes) to control data stream
+  - 0: unmasked, 1: masked (inactive lane)
+  - `disable_lane` gives a suggested `rx_mask` for one FEMB with disabled lane(s)
+  - for multiple FEMBs setup, you'll need to merge several masks
+  - the `rx_mask` only ignore the valid bit of the data link without zeroing out
+  - the masked data are unsynchronized w/ the normal data
+
 Spy Buffer Readout
 ==================
 To check the wib spy buffer (FEMB1 in buffer 0):

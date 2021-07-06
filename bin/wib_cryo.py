@@ -29,7 +29,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.0.5              =
+=           v0.1.0              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
