@@ -28,15 +28,12 @@ if __name__ == "__main__":
             if i in args.femb: continue
             args.rx_mask |= (0xf << (i*4))
 
-    cmd = f'mem 0xa00c0008 {hex(args.rx_mask)}'
-    print(f'[{addr}] {cmd}')
-
+    print(f'setting rx_mask = {hex(args.rx_mask)}')
 
     wib = WIB(addr)
-    req = wibpb.Script()
+    req = wibpb.SetRxMask()
     rep = wibpb.Status()
 
-    req.script = cmd.encode()
-    req.file = False
+    req.value = args.rx_mask
     wib.send_command(req, rep)
     print(f'Successful: {rep.success}')
