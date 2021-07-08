@@ -135,7 +135,7 @@ def rogue_getDisp(addr, port, var_list):
             ret = client.getDisp(var)
             print(f'[{addr}:{port}] get {var} -> {ret}')
 
-def rogue_set(addr, port, pars, pause=0):
+def rogue_set(addr, port, pars, pause=0.5):
     """
     Set values to a list of rogue variables
 
@@ -156,7 +156,7 @@ def rogue_set(addr, port, pars, pause=0):
             client.set(path, val)
             if pause > 0: time.sleep(pause)
 
-def rogue_exec(addr, port, cmds, pause=0):
+def rogue_exec(addr, port, cmds, pause=0.5):
     """
     Set values to a list of rogue variables
 
