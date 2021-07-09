@@ -6,6 +6,7 @@ History
 
 DATE       WHO WHAT
 ---------- --- ---------------------------------------------------------
+2021-07-08 kvt set gtRstVector (v0.1.2)
 2021-07-06 kvt reset_asic during init (v0.1.1)
 2021-07-05 kvt Added disable_lane (v0.1.0)
 2021-07-05 kvt Fix config_asic_ch (v0.0.5)
@@ -30,7 +31,7 @@ def version(**kwargs):
 =================================
 = wib_cryo.py: WIB-CRYO scripts =
 =                               =
-=           v0.1.0              =
+=           v0.1.2              =
 =        Patrick Tsang          =
 =   kvtsang@slac.stanford.edu   =
 =                               =
@@ -273,10 +274,20 @@ def is_rx_locked(addr, port, femb, timeout, min_locked_cnt=10):
     fembs = [femb] if isinstance(femb, int) else femb
 
     def _check(addr, port):
+
+        pars = []
+        for i in fembs:
+            path = f'cryoAsicGen1.WibFembCryo.SspGtDecoderReg{i}'
+            pars.append((f'{path}.enable', True))
+
+            #FIXME: Do I belong here?
+            pars.append((f'{path}.gtRstVector', 0))
+        rogue_set(addr, port, pars)
+
         cnts = np.array([0, 0, 0, 0]) # counters for consecutive locked state in a row
         with SimpleClient(addr, port) as client:
-            for i in fembs:
-                client.set(f'cryoAsicGen1.WibFembCryo.SspGtDecoderReg{i}.enable', True)
+            #for i in fembs:
+            #    client.set(f'cryoAsicGen1.WibFembCryo.SspGtDecoderReg{i}.enable', True)
 
             while cnts[fembs].min() < min_locked_cnt:
                 for i in fembs:
@@ -297,15 +308,22 @@ def is_rx_locked(addr, port, femb, timeout, min_locked_cnt=10):
 def reset_asic(addr, port, femb):
     fembs = [femb] if isinstance(femb, int) else femb
 
-    pars = [('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.enable', True)]
+    pars = []
+
+    pars.extend([
+        ('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.enable', True),
+        ('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.SR0Polarity', False),
+        ('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.SampClkEn', False),
+    ])
+
     for i in fembs:
-        var = f'cryoAsicGen1.WibFembCryo.AppFpgaRegisters.GlblRstPolarity{i}'
-        pars.append((var, False))
+        pars.extend([
+            (f'cryoAsicGen1.WibFembCryo.SspGtDecoderReg{i}.enable', True),
+            (f'cryoAsicGen1.WibFembCryo.AppFpgaRegisters.GlblRstPolarity{i}', False),
+            (f'cryoAsicGen1.WibFembCryo.SspGtDecoderReg{i}.gtRstVector', 0xf),
+        ])
 
     rogue_set(addr, port, pars, pause=1)
-
-    clk(addr, port, 0)
-    sr0(addr, port, 0)
 
 def clk(addr, port, flag):
     rogue_set(addr, port, [('cryoAsicGen1.WibFembCryo.AppFpgaRegisters.SampClkEn', flag)])
@@ -327,7 +345,7 @@ def toggle_sr0(addr, port):
 
     rogue_set(addr, port, pars[:2])
     time.sleep(10)
-    rogue_set(addr, port, pars)
+    rogue_set(addr, port, pars[:2])
 
 def enable_clk(addr, port, femb):
     RETRIES = 2
@@ -426,6 +444,7 @@ def init(addr, port, femb, cold):
     time.sleep(30)
     enable_clk(addr, port, femb)
     toggle_sr0(addr, port)
+    time.sleep(10)
     print(f'[{addr}:{port}] WIB-CRYO initialzed, is_cold={cold}')
 
 def count_reset(addr, port):
