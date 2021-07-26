@@ -3,6 +3,7 @@
 import os
 import sys
 import argparse
+import h5py
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -170,7 +171,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
     return texts
 
-def plot_psd(adcs, fs=2e6, num=None):
+def plot_psd(adcs, fs, num=None):
     fig, axes = plt.subplots(8, 8, figsize=(32, 16),
                             sharex=True, sharey=True,
                             num=num, clear=True)
@@ -253,6 +254,18 @@ def plot(adcs, femb, title, output, plot_func, **kwargs):
             if plot_func.__name__ == 'plot_std':
                 save_stats(data, out_prefix.replace('std_', 'stats_'))
 
+def plot_kcu(data0, data1, title, output, plot_func, **kwargs):
+    for asic, data in zip([0,1], [data0,data1]):
+        out_prefix = output.format(asic)
+        print(out_prefix)
+        fig = plot_func(data, **kwargs)
+        fig.suptitle(title.format(asic))
+        fig.tight_layout(rect=(0,0,1,0.97))
+        fig.savefig(f'{out_prefix}.png')
+
+        if plot_func.__name__ == 'plot_std':
+            save_stats(data, out_prefix.replace('std_', 'stats_'))
+
 def _bind(parser, func, **kwargs):
     name = func.__name__
     alias = name.replace('plot_', '')
@@ -261,6 +274,7 @@ def _bind(parser, func, **kwargs):
     p.add_argument('-d', '--dataset', required=True)
     p.add_argument('--femb', type=int, choices=range(4), nargs='+')
     p.add_argument('--cold', action='store_true')
+    p.add_argument('--kcu', action='store_true')
     
     if func.__name__ == 'plot_psd':
         p.add_argument('--fs', type=float, default=1e6/0.512)
@@ -287,6 +301,12 @@ def _read(path):
 
     print(f"No input file in {path}", file=sys.stderr)
     sys.exit(1)
+
+def _read_kcu(path):
+    with h5py.File(path, 'r') as f:
+        print(f'Reading {path}')
+        data = f['adcData_0'][:], f['adcData_1'][:]
+    return data
 
 def _parse_tp(path):
     i = path.find('0x39')
@@ -325,20 +345,29 @@ def main():
     kwargs.pop('femb')
     kwargs.pop('cold')
     kwargs.pop('func')
+    kwargs.pop('kcu')
 
     plot_type = args.func.__name__.replace('plot_', '')
     tp = _parse_tp(args.input)
     cond = 'Cold' if args.cold else 'Room'
-    title = f'{args.dataset}_FEMB{{}}_ASIC{{}}_{tp}_{cond}'
-    output = f'{plot_type}_{args.dataset}_FEMB{{}}_ASIC{{}}_{tp}_{cond}'
+    if args.kcu:
+        title = f'{args.dataset}_ASIC{{}}_{tp}_{cond}'
+        output = f'{plot_type}_{args.dataset}_ASIC{{}}_{tp}_{cond}'
 
-    data = _read(args.input)
+        data0, data1 = _read_kcu(args.input)
 
-    if args.femb is None:
-        is_active = np.any(data, axis=(0,2,3))
-        args.femb = np.where(is_active)[0]
+        plot_kcu(data0, data1, title, output, args.func, **kwargs)
+    else:
+        title = f'{args.dataset}_FEMB{{}}_ASIC{{}}_{tp}_{cond}'
+        output = f'{plot_type}_{args.dataset}_FEMB{{}}_ASIC{{}}_{tp}_{cond}'
 
-    plot(data, args.femb, title, output, args.func, **kwargs)
+        data = _read(args.input)
+
+        if args.femb is None:
+            is_active = np.any(data, axis=(0,2,3))
+            args.femb = np.where(is_active)[0]
+
+        plot(data, args.femb, title, output, args.func, **kwargs)
 
 if __name__ == '__main__':
     main()

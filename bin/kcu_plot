@@ -1,0 +1,92 @@
+#!/usr/bin/env sh
+usage() {
+  cat <<_-EOF
+Make plots for dataset taken by KCU system.
+
+Usage: $PROG -1|-2 <directory> [title]
+  
+  -1, -2
+    Run at half speed (-1) or full speed (-2).
+
+  directory
+    Input directory for hdf5 files.
+  
+  title 
+    Title for figures and output file names, optional.
+
+_-EOF
+}
+
+PROG="kcu_plot"
+CMD="wib_plot.py"
+
+FS=""
+while getopts "12" OPT;
+do
+  case "$OPT" in
+    1) FS="1e6" ;;
+    2) FS="2e6" ;;
+  esac
+done
+shift $((OPTIND-1))
+
+[ -z $FS ] && echo "Please set -1|-2 for half or full speed" && exit 1
+
+case $# in 
+  1)
+    INDIR="$(realpath $1)"
+    TITLE=$(echo "$INDIR" | awk -F "/" '{printf("KCU_FEMB_%s_%s_%s", $(NF-2), $NF, $(NF-1))}')
+    ;;
+  2)
+    INDIR="$(realpath $1)"
+    TITLE="$2"
+    ;;
+  *)
+    usage && exit 1
+esac
+
+OPTS="--kcu -d $TITLE"
+case "$(echo \"$INDIR\" | tr '[:upper:]' '[:lower:]')" in
+  *cold*):
+    echo "Cold condition detected"
+    OPTS="$OPTS --cold"
+    ;;
+  *room*):
+    echo "Room condition detected"
+    ;;
+  *)
+    echo "Unknown condition, assuming room"
+    ;;
+esac
+
+OUTDIR="$(date '+%Y-%m-%d')_${TITLE}"
+[ ! -d $INDIR ] && echo "$INDIR not exisit" && exit 1
+[ -d $OUTDIR ] && echo "$OUTDIR already exisit. Aborting ..." && exit 1
+
+OLDDIR="$PWD"
+mkdir "$OUTDIR" && cd "$OUTDIR" || exit 1
+
+for file in ${INDIR}/*.hdf5
+do
+  echo "Processing $file"
+
+  case "$(basename $file)" in
+    *0x39[048c]*):
+      $CMD psd -i "$file" $OPTS --fs $FS
+      $CMD mcorr -i "$file" $OPTS
+      $CMD std -i "$file" $OPTS
+      ;;
+    *0x39[159d]*):
+      $CMD pulse -i "$file" $OPTS
+      ;;
+    *):
+      echo "Unknwon ASIC setting (skip processing)"
+      continue
+      ;;
+  esac
+done
+
+echo "DONE"
+echo 
+
+cd "$OLDDIR"
