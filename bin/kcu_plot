@@ -20,12 +20,15 @@ _-EOF
 PROG="kcu_plot"
 CMD="wib_plot.py"
 
+[ $# -eq 0 ] && usage && exit 0
+
 FS=""
-while getopts "12" OPT;
+while getopts "12h" OPT;
 do
   case "$OPT" in
     1) FS="1e6" ;;
     2) FS="2e6" ;;
+    *) usage && exit 1 ;;
   esac
 done
 shift $((OPTIND-1))
