@@ -48,3 +48,9 @@ for asic in $(seq 1 7); do
     -e "s/SspGtDecoderReg0/SspGtDecoderReg${femb}/g" \
     "$TEMPLATE" > "$OUTFILE"
 done
+
+for asic in $(seq 1 2 7); do
+  YMLFILE="${PREFIX}_asic${asic}.yml"
+  echo "Set ROsLVDS_bit to True for $YMLFILE"
+  sed -i -E 's/(\sROsLVDS_bit: )False/\1True/g' "$YMLFILE"
+done

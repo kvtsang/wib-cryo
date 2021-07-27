@@ -62,7 +62,7 @@ cryoAsicGen1:
       ADC_Ocen_Bk1: True
       VrefBuffExt_En_Bk0: True
       VrefBuffExt_En_Bk1: True
-      ROsLVDS_bit: True
+      ROsLVDS_bit: False
       SACIsLVDS_bit: True
       emph_bc: 0x0
       emph_bd: 0x0
